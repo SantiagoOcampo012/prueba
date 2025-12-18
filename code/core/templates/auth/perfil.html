@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+
+{% block title %}Inicio - DXControl{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="home-card">
+        <div class="text-center mb-4">
+            <i class="fas fa-home fa-4x text-primary mb-3"></i>
+            <h1 class="display-4">¡Bienvenido, {{ user.nick }}!</h1>
+            <p class="lead text-muted">Has iniciado sesión exitosamente en DXControl</p>
+        </div>
+
+        <hr class="my-4">
+
+        <!-- Información del Usuario -->
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <div class="card border-0 bg-light">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-user text-primary"></i> Información Personal
+                        </h5>
+                        <p class="card-text mb-1">
+                            <strong>Nickname:</strong> {{ user.nick }}
+                        </p>
+                        <p class="card-text mb-1">
+                            <strong>Correo:</strong> {{ user.correo }}
+                        </p>
+                        <p class="card-text mb-0">
+                            <strong>Slug:</strong> {{ user.slug }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <div class="card border-0 bg-light">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-shield-alt text-success"></i> Estado de Seguridad
+                        </h5>
+                        <p class="card-text mb-1">
+                            <i class="fas fa-check-circle text-success"></i>
+                            Autenticación de dos factores activa
+                        </p>
+                        <p class="card-text mb-1">
+                            <i class="fas fa-check-circle text-success"></i>
+                            Cuenta verificada
+                        </p>
+                        <p class="card-text mb-0">
+                            <i class="fas fa-check-circle text-success"></i>
+                            Sesión segura
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Acciones Rápidas -->
+        <div class="row mt-4">
+            <div class="col-md-4 mb-3">
+                <a href="{% url 'perfil' %}" class="card text-decoration-none border-0 bg-primary text-white">
+                    <div class="card-body text-center">
+                        <i class="fas fa-user-cog fa-3x mb-2"></i>
+                        <h5 class="card-title">Mi Perfil</h5>
+                        <p class="card-text small">Ver y editar información</p>
+                    </div>
+                </a>
+            </div>
+
+            <div class="col-md-4 mb-3">
+                <div class="card border-0" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <div class="card-body text-center text-white">
+                        <i class="fas fa-cog fa-3x mb-2"></i>
+                        <h5 class="card-title">Configuración</h5>
+                        <p class="card-text small">Ajustes de la cuenta</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 mb-3">
+                <a href="{% url 'logout' %}" class="card text-decoration-none border-0 bg-danger text-white">
+                    <div class="card-body text-center">
+                        <i class="fas fa-sign-out-alt fa-3x mb-2"></i>
+                        <h5 class="card-title">Cerrar Sesión</h5>
+                        <p class="card-text small">Salir de forma segura</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Información Adicional -->
+        <div class="alert alert-info mt-4" role="alert">
+            <h5 class="alert-heading">
+                <i class="fas fa-info-circle"></i> Información Importante
+            </h5>
+            <p class="mb-0">
+                Tu sesión está protegida con autenticación de dos factores. 
+                Si detectas alguna actividad sospechosa, cierra sesión inmediatamente y contacta al administrador.
+            </p>
+        </div>
+
+        <!-- Detalles de la Sesión -->
+        <div class="text-muted small text-center mt-4">
+            <p class="mb-1">
+                <i class="fas fa-clock"></i> Última actualización: {{ user.actualizacion|date:"d/m/Y H:i" }}
+            </p>
+            <p class="mb-0">
+                <i class="fas fa-calendar-alt"></i> Cuenta creada: {{ user.creacion|date:"d/m/Y" }}
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

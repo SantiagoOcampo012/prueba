@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/proyectos/lista_proyectos.css' %}">
+{% endblock %}
+
+{% block title %}Proyectos | Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="page-header">
+        <div class="header-content">
+            <div>
+                <h1 class="page-title">Mis Proyectos</h1>
+                <p class="page-subtitle">Gestiona y monitorea todos tus proyectos</p>
+            </div>
+            <a href="{% url 'proyectos:crear_proyecto' %}" class="btn-primary">
+                <span class="icon">+</span> Nuevo Proyecto
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="stats-bar">
+        <div class="stat-card">
+            <div class="stat-number">{{ total_proyectos }}</div>
+            <div class="stat-label">Total Proyectos</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ proyectos_en_progreso|default:0 }}</div>
+            <div class="stat-label">En Progreso</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">{{ proyectos_completados|default:0 }}</div>
+            <div class="stat-label">Completados</div>
+        </div>
+    </div>
+
+    <!-- Projects Grid -->
+    <div class="projects-container">
+        {% if proyectos_datos %}
+            {% for item in proyectos_datos %}
+            <div class="project-card">
+                <div class="project-header">
+                    <div class="project-icon">
+                        <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                            <rect x="8" y="12" width="24" height="20" rx="2" stroke="currentColor" stroke-width="2"/>
+                            <path d="M12 12V8H28V12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                            <circle cx="20" cy="22" r="3" fill="currentColor"/>
+                        </svg>
+                    </div>
+                    <div class="project-status active">{{ item.proyecto.estado|default:"Activo" }}</div>
+                </div>
+
+                <div class="project-body">
+                    <h3 class="project-name">{{ item.proyecto.nombre }}</h3>
+                    <p class="project-description">
+                        {% if item.proyecto.descripcion %}
+                            {{ item.proyecto.descripcion|truncatewords:15 }}
+                        {% else %}
+                            Sin descripción
+                        {% endif %}
+                    </p>
+                </div>
+
+                <div class="project-stats">
+                    <div class="stat">
+                        <span class="stat-icon">📋</span>
+                        <div>
+                            <div class="stat-value">{{ item.total_sprints }}</div>
+                            <div class="stat-name">Sprints</div>
+                        </div>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-icon">✓</span>
+                        <div>
+                            <div class="stat-value">{{ item.sprints_activos }}</div>
+                            <div class="stat-name">Activos</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="project-footer">
+                    <div class="progress-bar">
+                        <div class="progress" style="width: 65%"></div>
+                    </div>
+                    <span class="progress-text">65% completado</span>
+                </div>
+
+                <div class="project-actions">
+                    <a href="{% url 'proyectos:detalle_proyecto' item.proyecto.id %}" class="btn-link">Ver Detalles</a>
+                    <button class="btn-icon" title="Editar">✏️</button>
+                    <button class="btn-icon" title="Opciones">⋯</button>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-icon">📁</div>
+                <h3>No hay proyectos</h3>
+                <p>Crea tu primer proyecto para comenzar</p>
+                <a href="{% url 'proyectos:crear_proyecto' %}" class="btn-primary">Crear Proyecto</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

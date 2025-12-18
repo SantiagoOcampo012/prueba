@@ -1,0 +1,273 @@
+# Estructura de Estilos CSS - DX-DEV-QA
+
+## Resumen de la Organización
+
+Esta estructura sigue el principio DRY (Don't Repeat Yourself) con un sistema híbrido que combina:
+- **CSS Global** (`common.css`) - Componentes reutilizables en todas las vistas
+- **CSS Específico** - Estilos únicos de cada vista
+
+---
+
+## Archivos CSS
+
+### 1. `static/css/common.css` (GLOBAL)
+**Propósito:** Componentes y estilos reutilizables en todo el proyecto
+
+**Incluye:**
+- Variables globales de colores (paleta completa)
+- Botones (`.btn-primary`, `.btn-secondary`, `.btn-success`, `.btn-danger`, `.btn-link`, `.btn-icon`)
+- Formularios (`.form-control`, `.form-select`, `.form-label`)
+- Cards (`.card`, `.card-header`, `.card-body`)
+- Badges (`.badge-info`, `.badge-success`, `.badge-warning`, `.badge-danger`)
+- Modales (`.modal`, `.modal-content`, `.modal-header`)
+- Alertas (`.alert-success`, `.alert-danger`, `.alert-warning`, `.alert-info`)
+- Utilidades (`.text-white`, `.mb-3`, `.d-flex`, etc.)
+- Estados vacíos (`.empty-state`, `.empty-icon`)
+
+**Uso:** Se carga automáticamente en `base.html` para todas las páginas
+
+---
+
+### 2. `static/css/proyectos/lista_proyectos.css`
+**Propósito:** Estilos específicos de la lista de proyectos
+
+**Incluye:**
+- `.page-header`, `.page-title`, `.page-subtitle`
+- `.stats-bar`, `.stat-card`, `.stat-number`, `.stat-label`
+- `.projects-container`, `.project-card`
+- `.project-icon`, `.project-status`, `.project-stats`
+- `.progress-bar`, `.progress`
+
+**Características especiales:**
+- Los números de estadísticas (Total, En Progreso, Completados) tienen colores blancos con fondo degradado
+- Grid responsivo de proyectos
+- Animaciones hover en cards
+
+---
+
+### 3. `static/css/proyectos/crear_proyecto.css`
+**Propósito:** Estilos específicos del formulario de creación de proyectos
+
+**Incluye:**
+- `h4` con color blanco (ARREGLADO)
+- `.dynamic-section`, `.dynamic-item` para secciones dinámicas
+- `.remove-btn` para botones de eliminar
+- Grid system (`.row`, `.col-md-4`, `.col-md-6`, `.col-md-12`)
+
+**Características especiales:**
+- Todos los h4 ahora son blancos y visibles
+- Sistema de columnas responsivo
+- Soporte para formularios dinámicos
+
+---
+
+### 4. `static/css/proyectos/detalle_proyecto.css`
+**Propósito:** Estilos específicos de la vista detallada de proyecto
+
+**Incluye:**
+- `.proyecto-header` para encabezado del proyecto
+- `.tabs`, `.tab`, `.tab-content` para sistema de pestañas
+- `.sprints-grid`, `.sprint-card` para listado de sprints
+- `.metodologias-list`, `.metodologia-badge`
+- `.miembros-table` para tabla de miembros
+- `.tareas-grid`, `.tarea-card` para tareas
+
+**Características especiales:**
+- Sistema de tabs interactivo
+- Grids responsivos para sprints y tareas
+- Animaciones de modal
+
+---
+
+### 5. `static/css/auth/home.css`
+**Propósito:** Estilos específicos de la página de inicio
+
+**Incluye:**
+- `.welcome-hero` con efectos de borde difuminado
+- `.stats-row` para estadísticas principales
+- `.grid-container`, `.feature-card` para cards de características
+- `.card-icon`, `.card-stats` para iconos y estadísticas
+- Animación `@keyframes float` para iconos
+
+**Características especiales:**
+- Hero con efectos visuales (blur circles)
+- Cards con línea superior animada al hover
+- Iconos flotantes animados
+
+---
+
+## Paleta de Colores
+
+\`\`\`css
+--bg-dark: #0d0e27;        /* Fondo oscuro principal */
+--bg-card: #1a1b3f;        /* Fondo de cards */
+--bg-light: #252847;       /* Fondo claro */
+--primary: #6366f1;        /* Color primario (índigo) */
+--primary-dark: #4f46e5;   /* Primario oscuro */
+--primary-light: #818cf8;  /* Primario claro */
+--accent: #ec4899;         /* Color de acento (rosa) */
+--text-white: #ffffff;     /* Texto blanco */
+--text-light: #d1d5db;     /* Texto claro */
+--text-muted: #9ca3af;     /* Texto apagado */
+--border: rgba(255, 255, 255, 0.1);  /* Bordes */
+--success: #10b981;        /* Verde éxito */
+--warning: #f59e0b;        /* Naranja advertencia */
+--danger: #ef4444;         /* Rojo peligro */
+--info: #3b82f6;           /* Azul información */
+\`\`\`
+
+---
+
+## Cómo Usar Esta Estructura
+
+### 1. En tus templates Django:
+
+\`\`\`html
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/tu-archivo-especifico.css' %}">
+{% endblock %}
+\`\`\`
+
+### 2. Usar componentes comunes:
+
+\`\`\`html
+<!-- Botón primario -->
+<button class="btn-primary">Guardar</button>
+
+<!-- Card con header -->
+<div class="card">
+    <div class="card-header">
+        <h3>Título</h3>
+    </div>
+    <div class="card-body">
+        Contenido...
+    </div>
+</div>
+
+<!-- Input de formulario -->
+<label class="form-label">Nombre</label>
+<input type="text" class="form-control" placeholder="Ingresa el nombre">
+
+<!-- Badge -->
+<span class="badge badge-success">Activo</span>
+
+<!-- Alerta -->
+<div class="alert alert-success">¡Operación exitosa!</div>
+\`\`\`
+
+### 3. Crear nuevos estilos específicos:
+
+Cuando necesites estilos únicos para una nueva vista:
+
+1. Crea un nuevo archivo CSS en la carpeta correspondiente
+2. Incluye SOLO estilos específicos de esa vista
+3. Reutiliza las clases de `common.css` siempre que sea posible
+4. Importa el archivo en tu template con `{% block extra_css %}`
+
+---
+
+## Ventajas de Esta Estructura
+
+✅ **Mantenimiento fácil** - Cambia un color en un solo lugar  
+✅ **Consistencia visual** - Todos los componentes se ven igual  
+✅ **Menos código** - No repetir los mismos estilos  
+✅ **Carga rápida** - Solo cargas los estilos necesarios  
+✅ **Escalabilidad** - Fácil agregar nuevas páginas  
+✅ **DRY (Don't Repeat Yourself)** - Sin duplicación de código  
+
+---
+
+## Problemas Resueltos
+
+### ✅ Números de proyectos sin color
+**Antes:** Los números en `.stat-card` eran púrpuras por defecto  
+**Ahora:** Tienen `color: white` explícitamente
+
+### ✅ h4 invisibles en crear_proyecto
+**Antes:** Los h4 no tenían color y se perdían en el fondo  
+**Ahora:** Todos los h4 tienen `color: var(--text-white)`
+
+### ✅ Repetición de variables CSS
+**Antes:** Cada archivo tenía sus propias variables `:root`  
+**Ahora:** Una sola definición en `common.css`
+
+### ✅ Componentes duplicados
+**Antes:** Botones y forms repetidos en cada archivo  
+**Ahora:** Definidos una vez en `common.css`
+
+---
+
+## Estructura de Carpetas
+
+\`\`\`
+static/
+├── css/
+│   ├── common.css              # 🌐 GLOBAL - Todos lo usan
+│   ├── auth/
+│   │   └── home.css            # Específico de home
+│   └── proyectos/
+│       ├── lista_proyectos.css # Específico de lista
+│       ├── crear_proyecto.css  # Específico de crear
+│       └── detalle_proyecto.css # Específico de detalle
+\`\`\`
+
+---
+
+## Buenas Prácticas
+
+1. **Siempre usa las clases de common.css primero**
+2. **Solo crea estilos específicos cuando sea necesario**
+3. **Mantén la paleta de colores usando las variables CSS**
+4. **Usa nombres de clases descriptivos y semánticos**
+5. **Agrupa estilos relacionados con comentarios**
+6. **Mantén el código responsive con media queries**
+
+---
+
+## Ejemplo Completo
+
+\`\`\`html
+<!-- templates/mi_nueva_vista.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/mi_carpeta/mi_vista.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Usando componentes de common.css -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Mi Vista</h3>
+        </div>
+        <div class="card-body">
+            <button class="btn-primary">Guardar</button>
+            <button class="btn-secondary">Cancelar</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+\`\`\`
+
+\`\`\`css
+/* static/css/mi_carpeta/mi_vista.css */
+/* Solo estilos específicos de esta vista */
+
+.mi-componente-unico {
+  background: rgba(26, 27, 63, 0.6);
+  padding: 2rem;
+  border-radius: 12px;
+}
+
+/* Todo lo demás viene de common.css */
+\`\`\`
+
+---
+
+**Última actualización:** 2025  
+**Mantenedor:** Equipo DX-DEV-QA

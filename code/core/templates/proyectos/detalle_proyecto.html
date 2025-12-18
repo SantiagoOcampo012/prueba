@@ -1,0 +1,332 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/proyectos/detalle_proyecto.css' %}">
+{% endblock %}
+
+{% block title %}{{ proyecto.nombre }} | Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    {% if messages %}
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Header -->
+    <div class="proyecto-header">
+        <div>
+            <h1>{{ proyecto.nombre }}</h1>
+            <p>{{ proyecto.descripcion|default:"Sin descripción" }}</p>
+        </div>
+        <button class="btn-primary">Editar Proyecto</button>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+        <button class="tab active" onclick="cambiarTab('sprints')">Sprints</button>
+        <button class="tab" onclick="cambiarTab('tareas')">Tareas</button>
+        <button class="tab" onclick="cambiarTab('miembros')">Miembros</button>
+        <button class="tab" onclick="cambiarTab('configuracion')">Configuración</button>
+    </div>
+
+    <!-- Tab: Sprints -->
+    <div id="tab-sprints" class="tab-content active">
+        <div class="section-header">
+            <h2>Sprints del Proyecto</h2>
+            {% if permite_sprints %}
+            <button class="btn-primary btn-sm" onclick="abrirModal('sprintModal')">+ Nuevo Sprint</button>
+            {% else %}
+            <button class="btn-primary btn-sm" disabled title="La metodología no permite sprints">+ Nuevo Sprint</button>
+            {% endif %}
+        </div>
+
+        {% if sprints %}
+            <div class="sprints-grid">
+                {% for sprint in sprints %}
+                <div class="sprint-card">
+                    <div class="sprint-name">{{ sprint.nombre }}</div>
+                    <div class="sprint-dates">
+                        📅 {{ sprint.fecha_inicio|date:"d/m/Y" }} - {{ sprint.fecha_fin|date:"d/m/Y" }}
+                    </div>
+                    <p class="sprint-description">{{ sprint.descripcion|truncatewords:20|default:"Sin descripción" }}</p>
+                    {% if sprint.estado %}
+                    <span class="badge badge-info">{{ sprint.estado.nombre }}</span>
+                    {% endif %}
+                    <!-- <div class="sprint-actions">
+                        <button class="btn-link btn-sm">Ver Sprint</button>
+                    </div> -->
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-message">No hay sprints creados aún</div>
+        {% endif %}
+    </div>
+
+    <!-- Tab: Tareas -->
+    <div id="tab-tareas" class="tab-content">
+        <div class="section-header">
+            <h2>Tareas del Proyecto</h2>
+            <button class="btn-primary btn-sm" onclick="abrirModal('tareaModal')">+ Nueva Tarea</button>
+        </div>
+
+        {% if tareas %}
+            <div class="tareas-grid">
+                {% for tarea in tareas %}
+                <div class="tarea-card">
+                    <div class="tarea-title">{{ tarea.nombre }}</div>
+                    <p>{{ tarea.descripcion|truncatewords:15|default:"Sin descripción" }}</p>
+                    <div class="tarea-meta">
+                        {% if tarea.estado %}
+                        <span class="badge badge-info">{{ tarea.estado.nombre }}</span>
+                        {% endif %}
+                        {% if tarea.prioridad %}
+                        <span class="badge badge-warning">{{ tarea.prioridad.nombre }}</span>
+                        {% endif %}
+                        {% if tarea.sprint %}
+                        <span class="badge badge-success">{{ tarea.sprint.nombre }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-message">No hay tareas creadas aún</div>
+        {% endif %}
+    </div>
+
+    <!-- Tab: Miembros -->
+    <div id="tab-miembros" class="tab-content">
+        <div class="section-header">
+            <h2>Miembros del Proyecto</h2>
+            <button class="btn-primary btn-sm" onclick="abrirModal('miembroModal')">+ Agregar Miembro</button>
+        </div>
+
+        {% if miembros %}
+            <table class="miembros-table">
+                <thead>
+                    <tr>
+                        <th>Empresa</th>
+                        <th>Usuario</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for miembro in miembros %}
+                    <tr>
+                        <td>{{ miembro.empresa.nombre }}</td>
+                        <td>{{ miembro.usuario.nick }}</td>
+                        <td>{{ miembro.creacion|date:"d/m/Y" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="empty-message">No hay miembros en este proyecto</div>
+        {% endif %}
+    </div>
+
+    <!-- Tab: Configuración -->
+    <div id="tab-configuracion" class="tab-content">
+        <div class="section-header">
+            <h2>Metodologías</h2>
+            <button class="btn-primary btn-sm" onclick="abrirModal('metodologiaModal')">+ Agregar Metodología</button>
+        </div>
+
+        {% if metodologias_proyecto %}
+            <div class="metodologias-list">
+                {% for pm in metodologias_proyecto %}
+                <span class="metodologia-badge">{{ pm.metodologia.nombre }}</span>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-message">No hay metodologías asignadas</div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal: Crear Sprint -->
+<div id="sprintModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Crear Nuevo Sprint</h3>
+            <button class="close-modal" onclick="cerrarModal('sprintModal')">×</button>
+        </div>
+        <form method="POST" action="{% url 'proyectos:crear_sprint' proyecto.id %}">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label">Nombre *</label>
+                <input type="text" name="nombre" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Descripción</label>
+                <textarea name="descripcion" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Fecha Inicio *</label>
+                <input type="date" name="fecha_inicio" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Fecha Fin *</label>
+                <input type="date" name="fecha_fin" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Estado</label>
+                <select name="estado" class="form-select">
+                    <option value="">Sin estado</option>
+                    {% for estado in estados %}
+                    <option value="{{ estado.id }}">{{ estado.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn-primary w-100">Crear Sprint</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Crear Tarea -->
+<div id="tareaModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Crear Nueva Tarea</h3>
+            <button class="close-modal" onclick="cerrarModal('tareaModal')">×</button>
+        </div>
+        <form method="POST" action="{% url 'proyectos:crear_tarea' proyecto.id %}">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label">Nombre *</label>
+                <input type="text" name="nombre" class="form-control" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Descripción</label>
+                <textarea name="descripcion" class="form-control" rows="3"></textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Estado *</label>
+                <select name="estado" class="form-select" required>
+                    <option value="">Seleccione...</option>
+                    {% for estado in estados %}
+                    <option value="{{ estado.id }}">{{ estado.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Prioridad</label>
+                <select name="prioridad" class="form-select">
+                    <option value="">Sin prioridad</option>
+                    {% for prioridad in prioridades %}
+                    <option value="{{ prioridad.id }}">{{ prioridad.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% if permite_sprints %}
+            <div class="mb-3">
+                <label class="form-label">Sprint</label>
+                <select name="sprint" class="form-select">
+                    <option value="">Sin sprint</option>
+                    {% for sprint in sprints %}
+                    <option value="{{ sprint.id }}">{{ sprint.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+            <button type="submit" class="btn-primary w-100">Crear Tarea</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Agregar Miembro -->
+<div id="miembroModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Agregar Miembro</h3>
+            <button class="close-modal" onclick="cerrarModal('miembroModal')">×</button>
+        </div>
+        <form method="POST" action="{% url 'proyectos:agregar_miembro' proyecto.id %}">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label">Empresa *</label>
+                <select name="empresa" class="form-select" required>
+                    <option value="">Seleccione...</option>
+                    {% for empresa in empresas %}
+                    <option value="{{ empresa.id }}">{{ empresa.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Usuario *</label>
+                <select name="usuario" class="form-select" required>
+                    <option value="">Seleccione...</option>
+                    {% for usuario in usuarios %}
+                    <option value="{{ usuario.id }}">{{ usuario.nick }} - {{ usuario.email }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn-primary w-100">Agregar Miembro</button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal: Agregar Metodología -->
+<div id="metodologiaModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Agregar Metodología</h3>
+            <button class="close-modal" onclick="cerrarModal('metodologiaModal')">×</button>
+        </div>
+        <form method="POST" action="{% url 'proyectos:agregar_metodologia' proyecto.id %}">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label">Metodología *</label>
+                <select name="metodologia" class="form-select" required>
+                    <option value="">Seleccione...</option>
+                    {% for metodologia in metodologias %}
+                    <option value="{{ metodologia.id }}">{{ metodologia.nombre }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn-primary w-100">Agregar Metodología</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function abrirModal(modalId) {
+    document.getElementById(modalId).classList.add('active');
+}
+
+function cerrarModal(modalId) {
+    document.getElementById(modalId).classList.remove('active');
+}
+
+// Cerrar modal al hacer clic fuera
+document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            cerrarModal(this.id);
+        }
+    });
+});
+
+function cambiarTab(tabName) {
+    // Ocultar todos los tabs
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.querySelectorAll('.tab').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    // Mostrar el tab seleccionado
+    document.getElementById('tab-' + tabName).classList.add('active');
+    event.target.classList.add('active');
+}
+</script>
+
+{% endblock %}

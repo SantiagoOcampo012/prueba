@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Inicio | DX-DEV-QA{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/auth/home.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Welcome Hero Section -->
+    <div class="welcome-hero">
+        <div class="welcome-icon">
+            <i class="fas fa-rocket"></i>
+        </div>
+        <h1>¡Bienvenido, {{ user.nick }}! 🎉</h1>
+        <p>Tu plataforma de gestión de proyectos y QA está lista. Comienza a gestionar tus proyectos y tareas.</p>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <h4>Proyectos Activos</h4>
+            <div class="number">12</div>
+        </div>
+        <div class="stat-card active">
+            <h4>Tareas Pendientes</h4>
+            <div class="number">28</div>
+        </div>
+        <div class="stat-card">
+            <h4>Tests Completados</h4>
+            <div class="number">156</div>
+        </div>
+    </div>
+
+    <!-- Feature Grid -->
+    <div class="grid-container">
+        <!-- Projects Card -->
+        <div class="feature-card">
+            <div class="card-icon projects">
+                <i class="fas fa-folder-open"></i>
+            </div>
+            <h3>Proyectos</h3>
+            <p>Crea y gestiona tus proyectos de desarrollo. Organiza equipos, define objetivos y realiza seguimiento del progreso en tiempo real.</p>
+            
+            <div class="card-stats">
+                <div class="stat-item">
+                    <div class="stat-number">12</div>
+                    <div class="stat-label">Activos</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">5</div>
+                    <div class="stat-label">Completados</div>
+                </div>
+            </div>
+            
+            <a  href="{% url 'proyectos:lista_proyectos' %}" class="btn-card">
+                <i class="fas fa-arrow-right me-2"></i>Ver Proyectos
+            </a>
+        </div>
+
+        <!-- Tasks Card -->
+        <div class="feature-card">
+            <div class="card-icon tasks">
+                <i class="fas fa-tasks"></i>
+            </div>
+            <h3>Tareas</h3>
+            <p>Asigna y monitorea tareas dentro de cada proyecto. Establece prioridades, plazos y mantén a tu equipo sincronizado y productivo.</p>
+            
+            <div class="card-stats">
+                <div class="stat-item">
+                    <div class="stat-number">28</div>
+                    <div class="stat-label">Pendientes</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">15</div>
+                    <div class="stat-label">En Progreso</div>
+                </div>
+            </div>
+            
+            <a href="#" class="btn-card">
+                <i class="fas fa-arrow-right me-2"></i>Ver Tareas
+            </a>
+        </div>
+
+        <!-- Testing Card -->
+        <div class="feature-card">
+            <div class="card-icon tests">
+                <i class="fas fa-flask"></i>
+            </div>
+            <h3>Quality Assurance</h3>
+            <p>Gestiona planes de prueba, casos de test y resultados. Asegura la calidad de tu código con metodologías de testing estructuradas.</p>
+            
+            <div class="card-stats">
+                <div class="stat-item">
+                    <div class="stat-number">156</div>
+                    <div class="stat-label">Tests</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">94%</div>
+                    <div class="stat-label">Éxito</div>
+                </div>
+            </div>
+            
+            <a href="#" class="btn-card">
+                <i class="fas fa-arrow-right me-2"></i>Ver Tests
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div style="text-align: center; padding: 40px 0; border-top: 2px solid rgba(255, 255, 255, 0.1);">
+        <h3 style="color: white; margin-bottom: 20px; font-weight: 600;">Acciones Rápidas</h3>
+        <div style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+            <a href="#" class="btn-card" style="padding: 12px 25px;">
+                <i class="fas fa-plus me-2"></i>Nuevo Proyecto
+            </a>
+            <a href="#" class="btn-card" style="padding: 12px 25px; background: rgba(255, 255, 255, 0.2); border: 2px solid white;">
+                <i class="fas fa-users me-2"></i>Mi Equipo
+            </a>
+            <a href="{% url 'logout' %}" class="btn-card" style="padding: 12px 25px; background: #e74c3c;">
+                <i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

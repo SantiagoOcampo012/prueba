@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}DX-DEV-QA - Sistema de Autenticación{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Agregado common.css como base global -->
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/common.css' %}">
+    
+    <!-- Estilos específicos de cada página -->
+    {% block extra_css %}{% endblock %}
+
+    <style>
+        /* Estilos específicos del base layout */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1a3f 50%, var(--bg-dark) 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: var(--text-white);
+        }
+
+        /* Navbar */
+        .navbar {
+            background-color: rgba(13, 14, 39, 0.98) !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1046;
+            border-bottom: 1px solid var(--border);
+            backdrop-filter: blur(10px);
+        }
+
+        .navbar-brand {
+            color: var(--primary-light) !important;
+            font-weight: 700;
+            font-size: 1.3rem;
+        }
+
+        /* Reorganizando navbar para mostrar menú a la derecha */
+        .navbar-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-left: auto;
+        }
+
+        .menu-button {
+            display: none;
+            padding: 0.6rem 1.2rem;
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--primary-light);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .menu-button:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        body.authenticated .menu-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Botones de usuario en desktop */
+        .user-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .user-btn {
+            padding: 0.6rem 1.2rem;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-light);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+
+        .user-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: var(--primary-light);
+            border-color: var(--primary);
+        }
+
+        .user-btn.logout:hover {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--danger);
+            border-color: var(--danger);
+        }
+
+        .content-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            padding-top: 110px;
+        }
+
+        /* Auth card */
+        .auth-card {
+            background: rgba(26, 27, 63, 0.8);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+            border: 1px solid var(--border);
+            overflow: hidden;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .auth-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .auth-header h2 {
+            margin: 0;
+            font-weight: 700;
+            font-size: 1.8rem;
+        }
+
+        .auth-body {
+            padding: 40px;
+        }
+
+        .btn-outline-primary {
+            color: var(--primary);
+            border-color: var(--primary);
+            border-radius: 10px;
+        }
+
+        .btn-outline-primary:hover {
+            background-color: var(--primary);
+        }
+
+        footer {
+            background-color: rgba(13, 14, 39, 0.98);
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.2);
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            margin-top: auto;
+        }
+
+        .text-link {
+            color: var(--primary-light);
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .text-link:hover {
+            color: var(--accent);
+        }
+
+        /* Menu module options - ajustado sin scroll */
+        .module-option {
+            padding: 15px 20px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            color: var(--text-light);
+            text-decoration: none !important;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 120px;
+        }
+
+        .module-option:hover {
+            background-color: rgba(99, 102, 241, 0.15);
+            color: var(--primary-light);
+            transform: translateY(-3px);
+        }
+
+        .module-option i {
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .module-option p {
+            margin: 0;
+            font-size: 0.95rem;
+            white-space: nowrap;
+        }
+
+        /* Menu superior sin scroll, altura fija */
+        #menuSuperior {
+            top: 70px !important;
+            height: 150px !important;
+            background: rgba(13, 14, 39, 0.98) !important;
+            border: 1px solid var(--border);
+            border-top: none;
+            backdrop-filter: blur(10px);
+        }
+
+        .offcanvas-header {
+            background: rgba(13, 14, 39, 0.98);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 1.5rem;
+        }
+
+        .offcanvas-title {
+            color: var(--text-white);
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .offcanvas-body {
+            overflow: visible !important;
+        }
+
+        /* Responsive - ocultar botones en mobile */
+        @media (max-width: 991px) {
+            .user-actions {
+                display: none;
+            }
+
+            .navbar-actions {
+                gap: 0.5rem;
+            }
+
+            .navbar-toggler {
+                display: block !important;
+            }
+        }
+
+        @media (min-width: 992px) {
+            .navbar-toggler {
+                display: none !important;
+            }
+            
+            .navbar-collapse {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body {% if user.is_authenticated %}class="authenticated"{% endif %}>
+    
+    <!-- Navbar -->
+    <!-- Reorganizando navbar para poner todo a la derecha -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="{% url 'home' %}">
+                <i class="fas fa-shield-alt" style="color: var(--primary-light);"></i> DX-DEV-QA
+            </a>
+
+            {% if user.is_authenticated %}
+            <div class="navbar-actions">
+                <!-- Botón de menú ahora a la derecha -->
+                <button class="btn btn-outline-primary menu-button"
+                        type="button"
+                        data-bs-toggle="offcanvas"
+                        data-bs-target="#menuSuperior">
+                    <i class="fas fa-bars"></i> Menú
+                </button>
+
+                <!-- Botones de usuario visibles en desktop -->
+                <div class="user-actions">
+                    <a href="#" class="user-btn">
+                        <i class="fas fa-user"></i> Perfil
+                    </a>
+                    <a href="{% url 'logout' %}" class="user-btn logout">
+                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                    </a>
+                </div>
+
+                <!-- Toggler para mobile -->
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+            </div>
+
+            <!-- Collapse para mobile -->
+            <!-- <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-user"></i> Perfil
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'logout' %}" style="color: var(--danger);">
+                            <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                        </a>
+                    </li>
+                </ul>
+            </div> -->
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- Menu superior sin scroll -->
+    <div class="offcanvas offcanvas-top" id="menuSuperior">
+        <div class="offcanvas-header">
+            <h6 class="offcanvas-title">
+                <i class="fas fa-layer-group" style="color: var(--primary);"></i> Panel de Módulos
+            </h6>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+        </div>
+
+        <div class="offcanvas-body d-flex justify-content-center align-items-center gap-4">
+            <a href="#" class="module-option">
+                <i class="fas fa-chart-line" style="color: var(--primary);"></i>
+                <p class="fw-semibold">Reportes</p>
+            </a>
+
+            <a href="{% url 'proyectos:lista_proyectos' %}" class="module-option">
+                <i class="fas fa-folder-open" style="color: var(--success);"></i>
+                <p class="fw-semibold">Proyectos</p>
+            </a>
+
+            <a href="{% url 'testsuite:lista_testsuites' %}" class="module-option">
+                <i class="fas fa-cogs" style="color: var(--warning);"></i>
+                <p class="fw-semibold">Tessuit</p>
+            </a>
+
+            <a href="{% url 'bugtracker:lista_bugs' %}" class="module-option">
+                <i class="fas fa-bug" style="color: var(--warning);"></i>
+                <p class="fw-semibold">Bugtracker</p>
+            </a>
+        </div>
+    </div>
+
+    <!-- Content -->
+    <div class="content-wrapper">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p class="mb-0">
+                &copy; 2025 DX-DEV-QA. Sistema de Gestión de Proyectos.
+            </p>
+        </div>
+    </footer>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

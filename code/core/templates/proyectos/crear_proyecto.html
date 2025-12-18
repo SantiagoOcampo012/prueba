@@ -1,0 +1,231 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/proyectos/crear_proyecto.css' %}">
+{% endblock %}
+
+{% block title %}Crear Proyecto{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="mb-0">Crear Nuevo Proyecto</h3>
+        </div>
+        <div class="card-body">
+            <!-- {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+                {% endfor %}
+            {% endif %} -->
+
+            <form method="POST" id="proyectoForm">
+                {% csrf_token %}
+
+                <!-- Información Básica -->
+                <div class="mb-3">
+                    <label class="form-label">Nombre del Proyecto <span class="text-danger">*</span></label>
+                    <input type="text" name="nombre" class="form-control" required>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Descripción</label>
+                    <textarea name="descripcion" class="form-control" rows="3"></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Estado <span class="text-danger">*</span></label>
+                    <select name="estado" class="form-select" required>
+                        <option value="">Seleccione...</option>
+                        {% for est in estados %}
+                        <option value="{{ est.id }}">{{ est.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Metodología <span class="text-danger">*</span></label>
+                    <select name="metodologia" id="metodologiaSelect" class="form-select" required>
+                        <option value="">Seleccione...</option>
+                        {% for m in metodologias %}
+                        <option value="{{ m.id }}">{{ m.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Sección de Sprints -->
+                <div id="sprintsSection" class="dynamic-section">
+                    <hr class="my-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4>Sprints</h4>
+                        <button type="button" class="btn-success" onclick="agregarSprint()">+ Agregar Sprint</button>
+                    </div>
+                    <div id="sprintsContainer"></div>
+                </div>
+
+                <!-- Sección de Tareas -->
+                <div class="mt-4">
+                    <hr class="my-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4>Tareas</h4>
+                        <button type="button" class="btn-success" onclick="agregarTarea()">+ Agregar Tarea</button>
+                    </div>
+                    <div id="tareasContainer"></div>
+                </div>
+
+                <div class="d-flex gap-2 mt-4">
+                    <button class="btn-primary" type="submit">Crear Proyecto</button>
+                    <a href="{% url 'proyectos:lista_proyectos' %}" class="btn-secondary">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    let sprintCounter = 0;
+let tareaCounter = 0;
+
+// Detectar metodología y mostrar/ocultar sprints
+document.getElementById("metodologiaSelect").addEventListener("change", function () {
+    const selected = this.options[this.selectedIndex].text.toLowerCase();
+    const sprintsSection = document.getElementById("sprintsSection");
+    const metodologias_sprint = ["scrum", "xp", "agile", "scrumban"];
+
+    if (metodologias_sprint.some(m => selected.includes(m))) {
+        sprintsSection.style.display = "block";
+    } else {
+        sprintsSection.style.display = "none";
+        document.getElementById("sprintsContainer").innerHTML = '';
+        sprintCounter = 0;
+    }
+    actualizarSelectsSprint();
+});
+
+function agregarSprint() {
+    const container = document.getElementById("sprintsContainer");
+    const id = sprintCounter++;
+    
+    const html = `
+        <div class="dynamic-item" id="sprint-${id}">
+            <button type="button" class="btn-danger btn-sm remove-btn" onclick="removerSprint(${id})">✕</button>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Nombre del Sprint *</label>
+                    <input type="text" name="sprint_nombre[]" class="form-control" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Estado</label>
+                    <select name="sprint_estado[]" class="form-select">
+                        <option value="">Sin estado</option>
+                        {% for estado in estados %}
+                        <option value="{{ estado.id }}">{{ estado.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Descripción</label>
+                <textarea name="sprint_descripcion[]" class="form-control" rows="2"></textarea>
+            </div>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Fecha Inicio *</label>
+                    <input type="date" name="sprint_inicio[]" class="form-control" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Fecha Fin *</label>
+                    <input type="date" name="sprint_fin[]" class="form-control" required>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', html);
+    actualizarSelectsSprint();
+}
+
+function removerSprint(id) {
+    document.getElementById(`sprint-${id}`).remove();
+    actualizarSelectsSprint();
+}
+
+function agregarTarea() {
+    const container = document.getElementById("tareasContainer");
+    const id = tareaCounter++;
+    
+    const html = `
+        <div class="dynamic-item" id="tarea-${id}">
+            <button type="button" class="btn-danger btn-sm remove-btn" onclick="removerTarea(${id})">✕</button>
+            <div class="row">
+                <div class="col-md-12 mb-3">
+                    <label class="form-label">Nombre de la Tarea *</label>
+                    <input type="text" name="tarea_nombre[]" class="form-control" required>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Descripción</label>
+                <textarea name="tarea_descripcion[]" class="form-control" rows="2"></textarea>
+            </div>
+            <div class="row">
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Estado *</label>
+                    <select name="tarea_estado[]" class="form-select" required>
+                        <option value="">Seleccione...</option>
+                        {% for estado in estados %}
+                        <option value="{{ estado.id }}">{{ estado.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Prioridad</label>
+                    <select name="tarea_prioridad[]" class="form-select">
+                        <option value="">Sin prioridad</option>
+                        {% for prioridad in prioridades %}
+                        <option value="{{ prioridad.id }}">{{ prioridad.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <label class="form-label">Sprint</label>
+                    <select name="tarea_sprint[]" class="form-select sprint-select">
+                        <option value="">Sin sprint</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.insertAdjacentHTML('beforeend', html);
+    actualizarSelectsSprint();
+}
+
+function removerTarea(id) {
+    document.getElementById(`tarea-${id}`).remove();
+}
+
+function actualizarSelectsSprint() {
+    const sprints = document.querySelectorAll('#sprintsContainer .dynamic-item');
+    const selects = document.querySelectorAll('.sprint-select');
+    
+    selects.forEach(select => {
+        const valorActual = select.value;
+        select.innerHTML = '<option value="">Sin sprint</option>';
+        
+        sprints.forEach((sprint, index) => {
+            const nombre = sprint.querySelector('input[name="sprint_nombre[]"]').value || `Sprint ${index + 1}`;
+            const option = document.createElement('option');
+            option.value = index;
+            option.textContent = nombre;
+            select.appendChild(option);
+        });
+        
+        select.value = valorActual;
+    });
+}
+</script>
+{% endblock %}

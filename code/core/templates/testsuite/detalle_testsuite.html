@@ -1,0 +1,268 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ testsuite.nombre }} - Sistema de Gestión{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/testsuite/testsuite.css' %}">
+<link rel="stylesheet" href="{% static 'css/testsuite/detalle.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Breadcrumb -->
+    <div class="breadcrumb-nav">
+        <a href="{% url 'testsuite:lista_testsuites' %}">
+            <i class="fas fa-flask"></i> Test Suites
+        </a>
+        <span>/</span>
+        <span class="current">{{ testsuite.nombre }}</span>
+    </div>
+
+    {% if messages %}
+    <div class="messages-container">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Header de detalle -->
+    <div class="detail-header">
+        <div class="header-content">
+            <div class="header-icon">
+                <i class="fas fa-flask"></i>
+            </div>
+            <div>
+                <h1>{{ testsuite.nombre }}</h1>
+                <div class="badges-row">
+                    <span class="badge badge-info">{{ testsuite.proyecto.nombre }}</span>
+                    <span class="badge badge-secondary">{{ casos.count }} Casos</span>
+                </div>
+            </div>
+        </div>
+        <div class="header-actions">
+            <a href="{% url 'testsuite:lista_testsuites' %}" class="btn-secondary">
+                <i class="fas fa-arrow-left"></i> Volver
+            </a>
+        </div>
+    </div>
+
+    <!-- Información del Test Suite -->
+    <div class="info-section">
+        <h3><i class="fas fa-info-circle"></i> Información General</h3>
+        <p>{{ testsuite.descripcion|default:"Sin descripción" }}</p>
+        
+        <div class="metadata">
+            <div class="meta-item">
+                <span class="meta-label">Proyecto</span>
+                <span class="meta-value">{{ testsuite.proyecto.nombre }}</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Fecha de Creación</span>
+                <span class="meta-value">{{ testsuite.creacion|date:"d/m/Y H:i" }}</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Total de Casos</span>
+                <span class="meta-value">{{ casos.count }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección de Casos de Prueba -->
+    <div class="section-header">
+        <h2><i class="fas fa-clipboard-list"></i> Casos de Prueba</h2>
+        <button class="btn-primary" onclick="abrirModalCrear()">
+            <i class="fas fa-plus"></i> Nuevo Caso de Prueba
+        </button>
+    </div>
+
+    <div class="testsuite-grid">
+        {% for caso in casos %}
+        <div class="testsuite-card" data-id="{{ caso.id }}">
+            <div class="card-header-custom">
+                <div class="card-icon">
+                    <i class="fas fa-clipboard-list"></i>
+                </div>
+                <div class="card-info">
+                    <h3>{{ caso.nombre }}</h3>
+                    <div class="badges-row">
+                        {% if caso.estado %}
+                        <span class="badge badge-{{ caso.estado.nombre|lower }}">{{ caso.estado.nombre }}</span>
+                        {% endif %}
+                        <span class="badge badge-secondary">v{{ caso.version }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body-custom">
+                <p class="card-description">{{ caso.descripcion|truncatewords:20 }}</p>
+                <div class="card-stats">
+                    {% if caso.entorno %}
+                    <div class="stat-item">
+                        <i class="fas fa-server"></i>
+                        <span>{{ caso.entorno.nombre }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="stat-item">
+                        <i class="fas fa-calendar"></i>
+                        <span>{{ caso.creacion|date:"d/m/Y" }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-actions">
+                <a href="{% url 'testsuite:detalle_caso_prueba' caso.id %}" class="btn-secondary btn-sm">
+                    <i class="fas fa-eye"></i> Ver
+                </a>
+                <button class="btn-primary btn-sm" onclick="abrirModalEditar({{ caso.id }}, '{{ caso.nombre|escapejs }}', '{{ caso.descripcion|escapejs }}', {{ testsuite.id }}, {% if caso.estado %}{{ caso.estado.id }}{% else %}null{% endif %}, '{{ caso.version }}', {% if caso.entorno %}{{ caso.entorno.id }}{% else %}null{% endif %})">
+                    <i class="fas fa-edit"></i> Editar
+                </button>
+                <button class="btn-danger btn-sm" onclick="confirmarEliminar({{ caso.id }}, '{{ caso.nombre|escapejs }}')">
+                    <i class="fas fa-trash"></i> Eliminar
+                </button>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <p>No hay Casos de Prueba creados para este Test Suite</p>
+            <button class="btn-primary" onclick="abrirModalCrear()">Crear el primero</button>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Modal para Crear/Editar Caso de Prueba -->
+<div id="modalForm" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="modalTitle">Nuevo Caso de Prueba</h2>
+            <span class="modal-close" onclick="cerrarModalForm()">&times;</span>
+        </div>
+        <form id="formCasoPrueba" method="POST" action="{% url 'testsuite:crear_caso_prueba' %}">
+            {% csrf_token %}
+            <input type="hidden" name="testsuite_id" value="{{ testsuite.id }}">
+            
+            <div class="modal-body">
+                <input type="hidden" id="id_test_suite" name="test_suite" value="{{ testsuite.id }}">
+                
+                <div class="form-group">
+                    <label>Test Suite</label>
+                    <input type="text" class="form-control" value="{{ testsuite.nombre }}" readonly disabled>
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_nombre">Nombre</label>
+                    {{ form.nombre }}
+                </div>
+                <div class="form-group">
+                    <label for="id_descripcion">Descripción</label>
+                    {{ form.descripcion }}
+                </div>
+                <div class="form-group">
+                    <label for="id_estado">Estado</label>
+                    {{ form.estado }}
+                </div>
+                <div class="form-group">
+                    <label for="id_version">Versión</label>
+                    {{ form.version }}
+                </div>
+                <div class="form-group">
+                    <label for="id_entorno">Entorno</label>
+                    {{ form.entorno }}
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="cerrarModalForm()">Cancelar</button>
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal para Confirmar Eliminación -->
+<div id="modalEliminar" class="modal">
+    <div class="modal-content modal-small">
+        <div class="modal-header">
+            <h2>Confirmar Eliminación</h2>
+            <span class="modal-close" onclick="cerrarModalEliminar()">&times;</span>
+        </div>
+        <form id="formEliminar" method="POST" action="">
+            {% csrf_token %}
+            <input type="hidden" name="testsuite_id" value="{{ testsuite.id }}">
+            <div class="modal-body">
+                <div class="confirm-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>¿Está seguro que desea eliminar el Caso de Prueba <strong id="nombreEliminar"></strong>?</p>
+                    <p class="text-muted">Esta acción no se puede deshacer.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="cerrarModalEliminar()">Cancelar</button>
+                <button type="submit" class="btn-danger">
+                    <i class="fas fa-trash"></i> Eliminar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function abrirModalCrear() {
+    document.getElementById('modalTitle').textContent = 'Nuevo Caso de Prueba';
+    document.getElementById('formCasoPrueba').action = '{% url "testsuite:crear_caso_prueba" %}';
+    document.getElementById('formCasoPrueba').reset();
+    document.getElementById('id_test_suite').value = {{ testsuite.id }};
+    document.getElementById('modalForm').style.display = 'flex';
+}
+
+function abrirModalEditar(id, nombre, descripcion, testSuiteId, estadoId, version, entornoId) {
+    document.getElementById('modalTitle').textContent = 'Editar Caso de Prueba';
+    document.getElementById('formCasoPrueba').action = `/testsuite/casos-prueba/${id}/editar/`;
+    document.getElementById('id_test_suite').value = testSuiteId;
+    document.getElementById('id_nombre').value = nombre;
+    document.getElementById('id_descripcion').value = descripcion;
+    if (estadoId) document.getElementById('id_estado').value = estadoId;
+    document.getElementById('id_version').value = version;
+    if (entornoId) document.getElementById('id_entorno').value = entornoId;
+    document.getElementById('modalForm').style.display = 'flex';
+}
+
+function cerrarModalForm() {
+    document.getElementById('modalForm').style.display = 'none';
+}
+
+function confirmarEliminar(id, nombre) {
+    document.getElementById('nombreEliminar').textContent = nombre;
+    document.getElementById('formEliminar').action = `/testsuite/casos-prueba/${id}/eliminar/`;
+    document.getElementById('modalEliminar').style.display = 'flex';
+}
+
+function cerrarModalEliminar() {
+    document.getElementById('modalEliminar').style.display = 'none';
+}
+
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const messages = document.querySelectorAll('.alert');
+    messages.forEach(function(message) {
+        setTimeout(function() {
+            message.style.opacity = '0';
+            setTimeout(function() {
+                message.remove();
+            }, 300);
+        }, 5000);
+    });
+});
+</script>
+{% endblock %}

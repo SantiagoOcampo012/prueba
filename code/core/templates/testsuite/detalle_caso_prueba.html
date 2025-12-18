@@ -1,0 +1,753 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ caso.nombre }} - Detalle{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/testsuite/testsuite.css' %}">
+<link rel="stylesheet" href="{% static 'css/testsuite/detalle.css' %}">
+<style>
+/* Estilos para el modal de previsualización */
+.modal-preview {
+    max-width: 90vw;
+    max-height: 95vh;
+    width: 1200px;
+}
+
+.modal-body-preview {
+    min-height: 400px;
+    max-height: calc(95vh - 180px);
+    overflow: auto;
+    padding: 20px;
+    background: #2c2c2c;
+}
+
+.preview-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 400px;
+}
+
+.preview-loading {
+    text-align: center;
+    color: #ffffff;
+}
+
+.preview-loading i {
+    font-size: 48px;
+    margin-bottom: 15px;
+    color: #007bff;
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.preview-loading p {
+    font-size: 1.1rem;
+    color: #ffffff;
+}
+
+.preview-error {
+    text-align: center;
+    padding: 40px;
+}
+
+.preview-error i {
+    font-size: 64px;
+    margin-bottom: 20px;
+}
+
+.preview-error p {
+    margin: 10px 0;
+    color: #ffffff;
+}
+
+.preview-container img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+}
+
+.preview-container pre {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 20px;
+    border-radius: 8px;
+    overflow: auto;
+    max-height: calc(90vh - 200px);
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* Estilos para el visor de PDF */
+.pdf-viewer-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.pdf-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 15px;
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 8px 8px 0 0;
+    width: 100%;
+    justify-content: center;
+}
+
+.pdf-controls button {
+    background: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.3s;
+}
+
+.pdf-controls button:hover {
+    background: #0056b3;
+}
+
+.pdf-controls button:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.pdf-page-info {
+    color: white;
+    font-size: 14px;
+    margin: 0 10px;
+}
+
+.pdf-canvas-wrapper {
+    background: #525252;
+    border-radius: 0 0 8px 8px;
+    padding: 20px;
+    overflow: auto;
+    max-height: 70vh;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+#pdf-render {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    max-width: 100%;
+    height: auto;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Breadcrumb -->
+    <div class="breadcrumb-nav">
+        <a href="{% url 'testsuite:lista_testsuites' %}">
+            <i class="fas fa-flask"></i> Test Suites
+        </a>
+        <span>/</span>
+        <a href="{% url 'testsuite:detalle_testsuite' caso.test_suite.id %}">
+            {{ caso.test_suite.nombre }}
+        </a>
+        <span>/</span>
+        <span class="current">{{ caso.nombre }}</span>
+    </div>
+
+    {% if messages %}
+    <div class="messages-container">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Header del Caso de Prueba -->
+    <div class="detail-header">
+        <div class="header-content">
+            <div class="header-icon">
+                <i class="fas fa-clipboard-list"></i>
+            </div>
+            <div>
+                <h1>{{ caso.nombre }}</h1>
+                <div class="badges-row">
+                    {% if caso.estado %}
+                    <span class="badge badge-{{ caso.estado.nombre|lower }}">{{ caso.estado.nombre }}</span>
+                    {% endif %}
+                    <span class="badge badge-secondary">v{{ caso.version }}</span>
+                    <span class="badge badge-info">{{ ejecuciones.count }} Ejecuciones</span>
+                </div>
+            </div>
+        </div>
+        <div class="header-actions">
+            <a href="{% url 'testsuite:detalle_testsuite' caso.test_suite.id %}" class="btn-secondary">
+                <i class="fas fa-arrow-left"></i> Volver
+            </a>
+        </div>
+    </div>
+
+    <!-- Información del Caso de Prueba -->
+    <div class="info-section">
+        <h3><i class="fas fa-info-circle"></i> Información del Caso</h3>
+        <p>{{ caso.descripcion|default:"Sin descripción" }}</p>
+        
+        <div class="metadata">
+            <div class="meta-item">
+                <span class="meta-label">Test Suite</span>
+                <span class="meta-value">{{ caso.test_suite.nombre }}</span>
+            </div>
+            {% if caso.entorno %}
+            <div class="meta-item">
+                <span class="meta-label">Entorno</span>
+                <span class="meta-value">{{ caso.entorno.nombre }}</span>
+            </div>
+            {% endif %}
+            <div class="meta-item">
+                <span class="meta-label">Fecha de Creación</span>
+                <span class="meta-value">{{ caso.creacion|date:"d/m/Y H:i" }}</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-label">Total de Ejecuciones</span>
+                <span class="meta-value">{{ ejecuciones.count }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección de Ejecuciones de Prueba -->
+    <div class="section-header">
+        <h2><i class="fas fa-play-circle"></i> Ejecuciones de Prueba</h2>
+        <button class="btn-primary" onclick="abrirModalCrear()">
+            <i class="fas fa-plus"></i> Nueva Ejecución
+        </button>
+    </div>
+
+    <!-- Grid de Ejecuciones -->
+    <div class="testsuite-grid">
+        {% for ejecucion in ejecuciones %}
+        <div class="testsuite-card" data-id="{{ ejecucion.id }}">
+            <div class="card-header-custom">
+                <div class="card-icon">
+                    <i class="fas fa-play-circle"></i>
+                </div>
+                <div class="card-info">
+                    <h3>Ejecución #{{ ejecucion.id }}</h3>
+                    <div class="badges-row">
+                        <span class="badge badge-resultado-{{ ejecucion.resultado|lower }}">{{ ejecucion.resultado }}</span>
+                        {% if ejecucion.estado %}
+                        <span class="badge badge-{{ ejecucion.estado.nombre|lower }}">{{ ejecucion.estado.nombre }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="card-body-custom">
+                <p class="card-description">{{ ejecucion.observaciones|truncatewords:15|default:"Sin observaciones" }}</p>
+                 <div class="card-stats">
+                    
+                    <div class="stat-item">
+                        <i class="fas fa-calendar"></i>
+                        <span>{{ ejecucion.creacion|date:"d/m/Y H:i" }}</span>
+                    </div>
+                    <div class="stat-item archivo-item">
+                        <i class="fas fa-paperclip"></i>
+                        {% if ejecucion.archivo %}
+                            <span class="text-success">Archivo adjunto</span>
+                        {% else %}
+                            <span class="text-muted">Sin archivo adjunto</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="card-actions">
+                <button class="btn-secondary btn-sm" onclick="verDetalle({{ ejecucion.id }})">
+                    <i class="fas fa-eye"></i> Ver
+                </button>
+                <button class="btn-primary btn-sm" onclick="abrirModalEditar({{ ejecucion.id }}, {{ caso.id }}, {% if ejecucion.estado %}{{ ejecucion.estado.id }}{% else %}null{% endif %}, '{{ ejecucion.resultado|escapejs }}', '{{ ejecucion.observaciones|escapejs }}')">
+                    <i class="fas fa-edit"></i> Editar
+                </button>
+                <button class="btn-danger btn-sm" onclick="confirmarEliminar({{ ejecucion.id }}, 'Ejecución #{{ ejecucion.id }}')">
+                    <i class="fas fa-trash"></i> Eliminar
+                </button>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <p>No hay Ejecuciones registradas para este Caso de Prueba</p>
+            <button class="btn-primary" onclick="abrirModalCrear()">Registrar la primera</button>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Modal para Crear/Editar Ejecución -->
+<div id="modalForm" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="modalTitle">Nueva Ejecución de Prueba</h2>
+            <span class="modal-close" onclick="cerrarModalForm()">&times;</span>
+        </div>
+        <form id="formEjecucion" method="POST" action="{% url 'testsuite:crear_ejecucion' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            <!-- Added caso_id hidden field for correct redirection -->
+            <input type="hidden" name="caso_id" value="{{ caso.id }}">
+            
+            <div class="modal-body">
+                <!-- Hide caso_prueba field and set it automatically -->
+                <input type="hidden" id="id_caso_prueba" name="caso_prueba" value="{{ caso.id }}">
+                
+                <div class="form-group">
+                    <label>Caso de Prueba</label>
+                    <input type="text" class="form-control" value="{{ caso.nombre }}" readonly disabled>
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_estado">Estado</label>
+                    {{ form.estado }}
+                </div>
+                <div class="form-group">
+                    <label for="id_resultado">Resultado</label>
+                    {{ form.resultado }}
+                </div>
+                <div class="form-group">
+                    <label for="id_observaciones">Observaciones</label>
+                    {{ form.observaciones }}
+                </div>
+                <div class="form-group">
+                    <label for="id_archivo_upload">Archivo Adjunto (Opcional)</label>
+                    {{ form.archivo_upload }}
+                    <small class="form-text text-muted">
+                        <i class="fas fa-info-circle"></i> Solo se permiten: Imágenes (JPG, PNG, GIF), PDF o documentos de texto (DOC, DOCX, TXT). Tamaño máximo: 10MB
+                    </small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="cerrarModalForm()">Cancelar</button>
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal para Ver Detalle -->
+<div id="modalDetalle" class="modal">
+    <div class="modal-content modal-large">
+        <div class="modal-header">
+            <h2>Detalle de Ejecución</h2>
+            <span class="modal-close" onclick="cerrarModalDetalle()">&times;</span>
+        </div>
+        <div class="modal-body" id="detalleContent">
+            <div class="loading-spinner">
+                <i class="fas fa-spinner fa-spin"></i> Cargando...
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para Confirmar Eliminación -->
+<div id="modalEliminar" class="modal">
+    <div class="modal-content modal-small">
+        <div class="modal-header">
+            <h2>Confirmar Eliminación</h2>
+            <span class="modal-close" onclick="cerrarModalEliminar()">&times;</span>
+        </div>
+        <form id="formEliminar" method="POST" action="">
+            {% csrf_token %}
+            <!-- Added caso_id for correct redirection after delete -->
+            <input type="hidden" name="caso_id" value="{{ caso.id }}">
+            <div class="modal-body">
+                <div class="confirm-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>¿Está seguro que desea eliminar <strong id="nombreEliminar"></strong>?</p>
+                    <p class="text-muted">Esta acción no se puede deshacer.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="cerrarModalEliminar()">Cancelar</button>
+                <button type="submit" class="btn-danger">
+                    <i class="fas fa-trash"></i> Eliminar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal para Previsualizar Archivos -->
+<div id="modalPreviewArchivo" class="modal">
+    <div class="modal-content modal-preview">
+        <div class="modal-header">
+            <h2 id="previewFileName">Vista Previa de Archivo</h2>
+            <span class="modal-close" onclick="cerrarModalPreview()">&times;</span>
+        </div>
+        <div class="modal-body modal-body-preview">
+            <div id="previewContainer" class="preview-container">
+                <!-- El contenido se cargará dinámicamente -->
+            </div>
+        </div>
+        <div class="modal-footer">
+            <a id="previewDownloadBtn" href="#" class="btn-primary" download>
+                <i class="fas fa-download"></i> Descargar
+            </a>
+            <button type="button" class="btn-secondary" onclick="cerrarModalPreview()">
+                Cerrar
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- PDF.js Library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+<script>
+// Configurar PDF.js
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+
+// Variables globales para el visor de PDF
+let pdfDoc = null;
+let pageNum = 1;
+let pageRendering = false;
+let pageNumPending = null;
+let scale = 1.5;
+
+function abrirModalCrear() {
+    document.getElementById('modalTitle').textContent = 'Nueva Ejecución de Prueba';
+    document.getElementById('formEjecucion').action = '{% url "testsuite:crear_ejecucion" %}';
+    document.getElementById('formEjecucion').reset();
+    document.getElementById('id_caso_prueba').value = {{ caso.id }};
+    document.getElementById('modalForm').style.display = 'flex';
+}
+
+function abrirModalEditar(id, casoPruebaId, estadoId, resultado, observaciones) {
+    document.getElementById('modalTitle').textContent = 'Editar Ejecución de Prueba';
+    document.getElementById('formEjecucion').action = `/testsuite/ejecuciones/${id}/editar/`;
+    document.getElementById('id_caso_prueba').value = casoPruebaId;
+    if (estadoId) document.getElementById('id_estado').value = estadoId;
+    document.getElementById('id_resultado').value = resultado;
+    document.getElementById('id_observaciones').value = observaciones;
+    document.getElementById('modalForm').style.display = 'flex';
+}
+
+function cerrarModalForm() {
+    document.getElementById('modalForm').style.display = 'none';
+}
+
+function verDetalle(id) {
+    document.getElementById('modalDetalle').style.display = 'flex';
+    fetch(`/testsuite/ejecuciones/${id}/detalle/`, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('detalleContent').innerHTML = data.html;
+    })
+    .catch(error => {
+        document.getElementById('detalleContent').innerHTML = '<p class="text-danger">Error al cargar los detalles</p>';
+    });
+}
+
+function cerrarModalDetalle() {
+    document.getElementById('modalDetalle').style.display = 'none';
+}
+
+function confirmarEliminar(id, nombre) {
+    document.getElementById('nombreEliminar').textContent = nombre;
+    document.getElementById('formEliminar').action = `/testsuite/ejecuciones/${id}/eliminar/`;
+    document.getElementById('modalEliminar').style.display = 'flex';
+}
+
+function cerrarModalEliminar() {
+    document.getElementById('modalEliminar').style.display = 'none';
+}
+
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const messages = document.querySelectorAll('.alert');
+    messages.forEach(function(message) {
+        setTimeout(function() {
+            message.style.opacity = '0';
+            setTimeout(function() {
+                message.remove();
+            }, 300);
+        }, 5000);
+    });
+});
+
+// ============================================
+// FUNCIONES DE PREVISUALIZACIÓN DE ARCHIVOS
+// ============================================
+
+function extractFilename(fullPath) {
+    if (!fullPath) return '';
+    const parts = fullPath.split('/');
+    return parts[parts.length - 1];
+}
+
+function previewFile(fileUrl, fileName) {
+    const modal = document.getElementById('modalPreviewArchivo');
+    const previewContainer = document.getElementById('previewContainer');
+    const fileNameElement = document.getElementById('previewFileName');
+    const downloadBtn = document.getElementById('previewDownloadBtn');
+    
+    fileNameElement.textContent = fileName || 'Vista Previa de Archivo';
+    downloadBtn.href = fileUrl;
+    downloadBtn.download = fileName;
+    
+    previewContainer.innerHTML = `
+        <div class="preview-loading">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Cargando vista previa...</p>
+        </div>
+    `;
+    
+    modal.style.display = 'flex';
+    
+    const extension = fileName.split('.').pop().toLowerCase();
+    
+    if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg'].includes(extension)) {
+        // Imágenes
+        previewContainer.innerHTML = `
+            <img src="${fileUrl}" 
+                 alt="${fileName}" 
+                 onload="this.style.opacity=1" 
+                 style="opacity:0;transition:opacity 0.3s;max-width:100%;height:auto;border-radius:8px;box-shadow:0 4px 6px rgba(0,0,0,0.1);" 
+                 onerror="showPreviewError('No se pudo cargar la imagen')">
+        `;
+    } else if (extension === 'pdf') {
+        // PDFs - Usar PDF.js para renderizar
+        renderPDF(fileUrl, previewContainer);
+    } else if (['txt', 'log', 'md', 'json', 'xml', 'csv'].includes(extension)) {
+        // Archivos de texto
+        fetch(fileUrl)
+            .then(response => {
+                if (!response.ok) throw new Error('Error al cargar el archivo');
+                return response.text();
+            })
+            .then(text => {
+                const maxChars = 100000;
+                const displayText = text.length > maxChars ? 
+                    text.substring(0, maxChars) + '\n\n... (truncado, descarga el archivo completo)' : 
+                    text;
+                previewContainer.innerHTML = `
+                    <div style="width: 100%; height: calc(90vh - 200px); overflow: auto; background: #1e1e1e; border-radius: 8px; padding: 20px;">
+                        <pre style="color: #d4d4d4; margin: 0; font-family: 'Courier New', monospace; font-size: 14px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word;">${escapeHtml(displayText)}</pre>
+                    </div>
+                `;
+            })
+            .catch(error => {
+                showPreviewError('No se pudo cargar el archivo de texto');
+            });
+    } else if (['doc', 'docx'].includes(extension)) {
+        // Documentos Word
+        showPreviewError(`Los archivos ${extension.toUpperCase()} deben descargarse para visualizarse correctamente`, fileName);
+    } else {
+        showPreviewError(`Vista previa no disponible para archivos .${extension}`, fileName);
+    }
+}
+
+// ============================================
+// RENDERIZAR PDF CON PDF.JS
+// ============================================
+
+function renderPDF(url, container) {
+    pdfjsLib.getDocument(url).promise.then(pdf => {
+        pdfDoc = pdf;
+        pageNum = 1;
+        
+        container.innerHTML = `
+            <div class="pdf-viewer-container">
+                <div class="pdf-controls">
+                    <button id="prev-page" onclick="onPrevPage()">
+                        <i class="fas fa-chevron-left"></i> Anterior
+                    </button>
+                    <span class="pdf-page-info">
+                        Página <span id="page-num"></span> de <span id="page-count"></span>
+                    </span>
+                    <button id="next-page" onclick="onNextPage()">
+                        Siguiente <i class="fas fa-chevron-right"></i>
+                    </button>
+                    <button onclick="zoomOut()">
+                        <i class="fas fa-search-minus"></i> Alejar
+                    </button>
+                    <button onclick="zoomIn()">
+                        <i class="fas fa-search-plus"></i> Acercar
+                    </button>
+                </div>
+                <div class="pdf-canvas-wrapper">
+                    <canvas id="pdf-render"></canvas>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('page-count').textContent = pdf.numPages;
+        renderPage(pageNum);
+    }).catch(error => {
+        console.error('Error al cargar PDF:', error);
+        showPreviewError('No se pudo cargar el archivo PDF. Intenta descargarlo.');
+    });
+}
+
+function renderPage(num) {
+    pageRendering = true;
+    
+    pdfDoc.getPage(num).then(page => {
+        const canvas = document.getElementById('pdf-render');
+        const ctx = canvas.getContext('2d');
+        const viewport = page.getViewport({ scale: scale });
+        
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+        
+        const renderContext = {
+            canvasContext: ctx,
+            viewport: viewport
+        };
+        
+        const renderTask = page.render(renderContext);
+        
+        renderTask.promise.then(() => {
+            pageRendering = false;
+            if (pageNumPending !== null) {
+                renderPage(pageNumPending);
+                pageNumPending = null;
+            }
+        });
+    });
+    
+    document.getElementById('page-num').textContent = num;
+    updatePDFButtons();
+}
+
+function queueRenderPage(num) {
+    if (pageRendering) {
+        pageNumPending = num;
+    } else {
+        renderPage(num);
+    }
+}
+
+function onPrevPage() {
+    if (pageNum <= 1) return;
+    pageNum--;
+    queueRenderPage(pageNum);
+}
+
+function onNextPage() {
+    if (pageNum >= pdfDoc.numPages) return;
+    pageNum++;
+    queueRenderPage(pageNum);
+}
+
+function zoomIn() {
+    scale += 0.25;
+    queueRenderPage(pageNum);
+}
+
+function zoomOut() {
+    if (scale <= 0.5) return;
+    scale -= 0.25;
+    queueRenderPage(pageNum);
+}
+
+function updatePDFButtons() {
+    document.getElementById('prev-page').disabled = (pageNum <= 1);
+    document.getElementById('next-page').disabled = (pageNum >= pdfDoc.numPages);
+}
+
+// ============================================
+// OTRAS FUNCIONES DE UTILIDAD
+// ============================================
+
+function showPreviewError(message, fileName = '') {
+    const previewContainer = document.getElementById('previewContainer');
+    const extension = fileName ? fileName.split('.').pop().toLowerCase() : '';
+    
+    let icon = 'fa-file';
+    let iconColor = '#007bff';
+    
+    if (extension === 'pdf') {
+        icon = 'fa-file-pdf';
+        iconColor = '#dc3545';
+    } else if (['doc', 'docx'].includes(extension)) {
+        icon = 'fa-file-word';
+        iconColor = '#2b579a';
+    } else if (['xls', 'xlsx'].includes(extension)) {
+        icon = 'fa-file-excel';
+        iconColor = '#217346';
+    }
+    
+    previewContainer.innerHTML = `
+        <div class="preview-error" style="text-align: center; padding: 40px;">
+            <i class="fas ${icon}" style="font-size: 64px; color: ${iconColor}; margin-bottom: 20px;"></i>
+            <p style="font-size: 1.1rem; margin: 10px 0; color: #ffffff;">${message}</p>
+            ${fileName ? `<p style="font-weight: bold; margin: 10px 0; color: #ffffff;"><strong>${escapeHtml(fileName)}</strong></p>` : ''}
+            ${extension ? `<p style="color: #cccccc; margin: 10px 0;">Extensión: .${extension}</p>` : ''}
+            <div style="margin-top: 30px; padding: 15px; background: rgba(255, 255, 255, 0.1); border-radius: 8px; max-width: 400px; margin-left: auto; margin-right: auto;">
+                <p style="color: #ffffff; margin: 0 0 15px 0; font-size: 0.95rem;">
+                    <i class="fas fa-info-circle"></i> Para visualizar este archivo, descárgalo a tu dispositivo
+                </p>
+                <button onclick="document.getElementById('previewDownloadBtn').click()" 
+                        class="btn-primary" 
+                        style="padding: 10px 20px; cursor: pointer;">
+                    <i class="fas fa-download"></i> Descargar archivo
+                </button>
+            </div>
+        </div>
+    `;
+}
+
+function cerrarModalPreview() {
+    const modal = document.getElementById('modalPreviewArchivo');
+    modal.style.display = 'none';
+    document.getElementById('previewContainer').innerHTML = '';
+    
+    // Resetear variables PDF
+    pdfDoc = null;
+    pageNum = 1;
+    scale = 1.5;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Cerrar modal con ESC
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        const modalPreview = document.getElementById('modalPreviewArchivo');
+        if (modalPreview && modalPreview.style.display === 'flex') {
+            cerrarModalPreview();
+        }
+    }
+});
+</script>
+{% endblock %}

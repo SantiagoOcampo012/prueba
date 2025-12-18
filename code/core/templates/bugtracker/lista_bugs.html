@@ -1,0 +1,336 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Bugs - Sistema de Gestión{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/bugtracker/bugtracker.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="content-wrapper">
+    <!-- Header Section -->
+    <div class="info-section-header">
+        <div class="page-header">
+            <div class="header-content-main">
+                <h1><i class="fas fa-bug"></i> Gestión de Bugs</h1>
+                <p class="header-subtitle">Administra y realiza seguimiento de bugs en tus proyectos</p>
+            </div>
+            <button class="btn-primary" onclick="abrirModalCrear()">
+                <i class="fas fa-plus"></i> Reportar Bug
+            </button>
+        </div>
+
+        {% if messages %}
+        <div class="messages-container">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Filtros -->
+        <div class="filters-section">
+            <form method="GET" class="filters-form">
+                <div class="filter-group">
+                    <label for="proyecto"><i class="fas fa-folder"></i> Proyecto</label>
+                    <select name="proyecto" id="proyecto" class="form-select" onchange="this.form.submit()">
+                        <option value="">Todos los proyectos</option>
+                        {% for proyecto in proyectos %}
+                        <option value="{{ proyecto.id }}" {% if request.GET.proyecto == proyecto.id|stringformat:"s" %}selected{% endif %}>
+                            {{ proyecto.nombre }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="estado"><i class="fas fa-flag"></i> Estado</label>
+                    <select name="estado" id="estado" class="form-select" onchange="this.form.submit()">
+                        <option value="">Todos los estados</option>
+                        {% for estado in estados %}
+                        <option value="{{ estado.id }}" {% if request.GET.estado == estado.id|stringformat:"s" %}selected{% endif %}>
+                            {{ estado.nombre }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="prioridad"><i class="fas fa-exclamation-circle"></i> Prioridad</label>
+                    <select name="prioridad" id="prioridad" class="form-select" onchange="this.form.submit()">
+                        <option value="">Todas las prioridades</option>
+                        {% for prioridad in prioridades %}
+                        <option value="{{ prioridad.id }}" {% if request.GET.prioridad == prioridad.id|stringformat:"s" %}selected{% endif %}>
+                            {{ prioridad.nombre }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% if request.GET.proyecto or request.GET.estado or request.GET.prioridad %}
+                <div class="filter-group">
+                    <label>&nbsp;</label>
+                    <a href="{% url 'bugtracker:lista_bugs' %}" class="btn-secondary btn-sm">
+                        <i class="fas fa-times"></i> Limpiar filtros
+                    </a>
+                </div>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    <!-- Grid de Bugs -->
+    <div class="bug-grid">
+        {% for bug in bugs %}
+        <div class="bug-card" data-id="{{ bug.id }}">
+            <div class="card-header-custom">
+                <div class="card-icon">
+                    <i class="fas fa-bug"></i>
+                </div>
+                <div class="card-info">
+                    <h3>{{ bug.titulo }}</h3>
+                    <div class="badges-row">
+                        {% if bug.proyecto %}
+                        <span class="badge badge-info">{{ bug.proyecto.nombre }}</span>
+                        {% endif %}
+                        {% if bug.estado %}
+                        <span class="badge badge-{{ bug.estado.nombre|lower|cut:' ' }}">{{ bug.estado.nombre }}</span>
+                        {% endif %}
+                        {% if bug.prioridad %}
+                        <span class="badge badge-prioridad-{{ bug.prioridad.nombre|lower }}">{{ bug.prioridad.nombre }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div class="card-body-custom">
+                <p class="card-description">{{ bug.descripcion|truncatewords:20 }}</p>
+                <div class="card-stats">
+                    <div class="stat-item">
+                        <i class="fas fa-user"></i>
+                        <span>{{ bug.reportado_por.nick }}</span>
+                    </div>
+                    {% if bug.asignado_a %}
+                    <div class="stat-item">
+                        <i class="fas fa-user-check"></i>
+                        <span>{{ bug.asignado_a.nick }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="stat-item">
+                        <i class="fas fa-calendar"></i>
+                        <span>{{ bug.creacion|date:"d/m/Y" }}</span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fas fa-comments"></i>
+                        <span>{{ bug.comentariobug_set.count }} comentarios</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-actions">
+                <a href="{% url 'bugtracker:detalle_bug' bug.id %}" class="btn-primary btn-sm">
+                    <i class="fas fa-eye"></i> Ver detalle
+                </a>
+                <button class="btn-success btn-sm" onclick="solicitarRevisionLista({{ bug.id }}, '{{ bug.titulo|escapejs }}')">
+                    <i class="fas fa-check-circle"></i> Revisión
+                </button>
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <p>No hay bugs reportados aún</p>
+            <button class="btn-primary" onclick="abrirModalCrear()">Reportar el primero</button>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Modal para Crear Bug -->
+<div id="modalFormBug" class="modal">
+    <div class="modal-content modal-large">
+        <div class="modal-header">
+            <h2 id="modalTitleBug">Reportar Nuevo Bug</h2>
+            <span class="modal-close" onclick="cerrarModalFormBug()">&times;</span>
+        </div>
+        <form id="formBug" method="POST" enctype="multipart/form-data" action="{% url 'bugtracker:crear_bug' %}">
+            {% csrf_token %}
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="id_titulo">Título <span class="text-danger">*</span></label>
+                        {{ form.titulo }}
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="id_descripcion">Descripción <span class="text-danger">*</span></label>
+                    {{ form.descripcion }}
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="id_proyecto">Proyecto <span class="text-danger">*</span></label>
+                        {{ form.proyecto }}
+                    </div>
+                    <div class="form-group">
+                        <label for="id_sprint">Sprint</label>
+                        <select name="sprint" id="id_sprint" class="form-select">
+                            <option value="">---------</option>
+                            {% for sprint in sprints %}
+                            <option value="{{ sprint.id }}">{{ sprint.nombre }} ({{ sprint.proyecto.nombre }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="id_severidad">Severidad</label>
+                        {{ form.severidad }}
+                    </div>
+                    <div class="form-group">
+                        <label for="id_prioridad">Prioridad</label>
+                        {{ form.prioridad }}
+                    </div>
+                    <div class="form-group">
+                        <label for="id_estado">Estado</label>
+                        {{ form.estado }}
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="id_asignado_a">Asignar a</label>
+                        {{ form.asignado_a }}
+                    </div>
+                    <div class="form-group">
+                        <label for="id_archivo">Archivo adjunto</label>
+                        {{ form.archivo }}
+                        <small class="form-text text-muted">
+                            <i class="fas fa-info-circle"></i> Opcional: capturas de pantalla, logs, etc.
+                        </small>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="cerrarModalFormBug()">Cancelar</button>
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal para Confirmar Eliminación -->
+<div id="modalEliminarBug" class="modal">
+    <div class="modal-content modal-small">
+        <div class="modal-header">
+            <h2>Confirmar Eliminación</h2>
+            <span class="modal-close" onclick="cerrarModalEliminarBug()">&times;</span>
+        </div>
+        <form id="formEliminarBug" method="POST" action="">
+            {% csrf_token %}
+            <div class="modal-body">
+                <div class="confirm-message">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>¿Está seguro que desea eliminar el bug <strong id="nombreEliminarBug"></strong>?</p>
+                    <p class="text-muted">Esta acción no se puede deshacer y se eliminarán todos los comentarios asociados.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="cerrarModalEliminarBug()">Cancelar</button>
+                <button type="submit" class="btn-danger">
+                    <i class="fas fa-trash"></i> Eliminar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Form oculto para solicitar revisión desde la lista -->
+<form id="formSolicitarRevisionLista" method="POST" action="" style="display: none;">
+    {% csrf_token %}
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Array con todos los sprints y sus proyectos
+const sprintsData = [
+    {% for sprint in sprints %}
+    {
+        id: {{ sprint.id }},
+        nombre: "{{ sprint.nombre|escapejs }}",
+        proyecto_id: {{ sprint.proyecto.id|default:"null" }}
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+];
+
+// Filtrar sprints según proyecto seleccionado
+document.getElementById('id_proyecto').addEventListener('change', function() {
+    const proyectoId = parseInt(this.value);
+    const sprintSelect = document.getElementById('id_sprint');
+    
+    // Limpiar opciones actuales
+    sprintSelect.innerHTML = '<option value="">---------</option>';
+    
+    // Si hay proyecto seleccionado, filtrar sprints
+    if (proyectoId) {
+        const sprintsFiltrados = sprintsData.filter(s => s.proyecto_id === proyectoId);
+        sprintsFiltrados.forEach(sprint => {
+            const option = document.createElement('option');
+            option.value = sprint.id;
+            option.textContent = sprint.nombre;
+            sprintSelect.appendChild(option);
+        });
+    } else {
+        // Si no hay proyecto, mostrar todos
+        sprintsData.forEach(sprint => {
+            const option = document.createElement('option');
+            option.value = sprint.id;
+            option.textContent = sprint.nombre;
+            sprintSelect.appendChild(option);
+        });
+    }
+});
+
+function abrirModalCrear() {
+    document.getElementById('modalTitleBug').textContent = 'Reportar Nuevo Bug';
+    document.getElementById('formBug').action = '{% url "bugtracker:crear_bug" %}';
+    document.getElementById('formBug').reset();
+    document.getElementById('modalFormBug').style.display = 'flex';
+}
+
+function cerrarModalFormBug() {
+    document.getElementById('modalFormBug').style.display = 'none';
+}
+
+function solicitarRevisionLista(bugId, titulo) {
+    if (confirm(`¿Desea solicitar revisión para el bug "${titulo}"?\n\nEsto enviará una notificación al equipo de revisión.`)) {
+        const form = document.getElementById('formSolicitarRevisionLista');
+        form.action = `/bugtracker/bugs/${bugId}/solicitar-revision/`;
+        form.submit();
+    }
+}
+
+// Cerrar modales al hacer clic fuera
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.style.display = 'none';
+    }
+}
+
+// Auto-ocultar mensajes
+document.addEventListener('DOMContentLoaded', function() {
+    const messages = document.querySelectorAll('.alert');
+    messages.forEach(function(message) {
+        setTimeout(function() {
+            message.style.opacity = '0';
+            setTimeout(function() {
+                message.remove();
+            }, 300);
+        }, 5000);
+    });
+});
+</script>
+{% endblock %}

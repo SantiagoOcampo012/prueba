@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Código de Verificación - DXControl</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f4f4f4;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <!-- Header -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px; text-align: center;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 32px;">
+                                🔐 DXControl
+                            </h1>
+                            <p style="margin: 10px 0 0; color: #ffffff; font-size: 16px;">
+                                Código de Verificación
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Body -->
+                    <tr>
+                        <td style="padding: 40px 30px;">
+                            <h2 style="margin: 0 0 20px; color: #333333; font-size: 24px;">
+                                Hola, {{ user_nick }}
+                            </h2>
+                            
+                            <p style="margin: 0 0 20px; color: #666666; font-size: 16px; line-height: 1.6;">
+                                Hemos recibido una solicitud de inicio de sesión en tu cuenta. 
+                                Para continuar, utiliza el siguiente código de verificación:
+                            </p>
+                            
+                            <!-- Código MFA -->
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td align="center" style="padding: 30px 0;">
+                                        <div style="display: inline-block; padding: 25px 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 10px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">
+                                            <p style="margin: 0; color: #ffffff; font-size: 48px; font-weight: bold; letter-spacing: 10px; font-family: 'Courier New', monospace;">
+                                                {{ codigo }}
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                            
+                            <!-- Información de Expiración -->
+                            <div style="margin: 30px 0; padding: 20px; background-color: #e7f3ff; border-left: 4px solid #2196f3; border-radius: 5px;">
+                                <p style="margin: 0; color: #0d47a1; font-size: 14px;">
+                                    <strong>⏱️ Importante:</strong><br>
+                                    Este código expirará en <strong>{{ expiration_minutes }} minutos</strong>.<br>
+                                    No compartas este código con nadie.
+                                </p>
+                            </div>
+                            
+                            <!-- Alerta de Seguridad -->
+                            <div style="margin: 20px 0; padding: 20px; background-color: #ffebee; border-left: 4px solid #f44336; border-radius: 5px;">
+                                <p style="margin: 0; color: #c62828; font-size: 14px;">
+                                    <strong>🚨 Seguridad:</strong><br>
+                                    Si no intentaste iniciar sesión, alguien podría estar tratando de acceder a tu cuenta. 
+                                    Por favor, cambia tu contraseña inmediatamente.
+                                </p>
+                            </div>
+                            
+                            <p style="margin: 20px 0 0; color: #666666; font-size: 14px; line-height: 1.6;">
+                                Este código solo puede ser usado una vez y es válido únicamente para esta sesión de inicio de sesión.
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- Footer -->
+                    <tr>
+                        <td style="background-color: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #dee2e6;">
+                            <p style="margin: 0 0 10px; color: #6c757d; font-size: 14px;">
+                                Este es un correo automático, por favor no respondas a este mensaje.
+                            </p>
+                            <p style="margin: 0; color: #6c757d; font-size: 12px;">
+                                © 2025 DXControl. Todos los derechos reservados.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

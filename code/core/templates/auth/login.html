@@ -1,0 +1,87 @@
+{% extends "base.html" %} {% load widget_tweaks %} 
+{% block content %}
+<!-- Contenedor Centrado y Ancho Fijo -->
+<div class="container d-flex justify-content-center my-5">
+
+    <!-- Tarjeta de Autenticación Personalizada (Clase definida en base.html) -->
+    <div class="auth-card">
+
+        <!-- Encabezado de la Tarjeta (Fondo de color definido en base.html) -->
+        <div class="auth-header">
+            <i class="fas fa-user-lock fa-3x mb-2"></i>
+            <h2>Iniciar Sesión</h2>
+            <p class="mb-0 small opacity-75">Accede a tu cuenta DXControl</p>
+        </div>
+
+        <!-- Cuerpo del Formulario -->
+        <div class="auth-body">
+
+            <!-- Mensajes de Django -->
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} text-center">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+
+            <form method="post" novalidate>
+                {% csrf_token %}
+
+                <!-- Campo para correo con Ícono (CORRECCIÓN: Asegurando la aplicación de form-control) -->
+                <div class="mb-4">
+                    <label for="{{ form.correo.id_for_label }}" class="form-label">Correo electrónico</label>
+                    <div class="input-group">
+                        <!-- El input-group-text recibe estilos en base.html para verse bien -->
+                        <span class="input-group-text" id="addon-correo"><i class="fas fa-envelope"></i></span>
+                        <!-- Usamos add_class:"form-control" para garantizar la visibilidad y estilo de Bootstrap -->
+                        {{ form.correo|add_class:"form-control"|attr:"aria-describedby:addon-correo"|attr:"placeholder:tucorreo@ejemplo.com" }}
+                    </div>
+                    {% for error in form.correo.errors %}
+                        <small class="text-danger d-block mt-1">{{ error }}</small>
+                    {% endfor %}
+                </div>
+
+                <!-- Campo para contraseña con Ícono -->
+                <div class="mb-5">
+                    <label for="{{ form.password.id_for_label }}" class="form-label">Contraseña</label>
+                    <div class="input-group">
+                        <span class="input-group-text" id="addon-password"><i class="fas fa-lock"></i></span>
+                        <!-- Usamos add_class:"form-control" para garantizar la visibilidad y estilo de Bootstrap -->
+                        {{ form.password|add_class:"form-control"|attr:"aria-describedby:addon-password"|attr:"placeholder:********" }}
+                    </div>
+                    {% for error in form.password.errors %}
+                        <small class="text-danger d-block mt-1">{{ error }}</small>
+                    {% endfor %}
+                </div>
+
+                <!-- Mensaje de error general -->
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger mb-4">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        {% for error in form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <!-- Botón de inicio de sesión -->
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary btn-lg fw-bold" style="border-radius: 10px;">
+                        <i class="fas fa-arrow-right me-2"></i> Continuar
+                    </button>
+                </div>
+            </form>
+
+            <!-- Enlaces auxiliares -->
+            <div class="mt-4 text-center border-top pt-3 small">
+                <p class="mb-1">¿No tienes cuenta? <a href="{% url 'registro' %}" class="text-link">¡Regístrate ahora!</a></p>
+                <div class="d-flex justify-content-around mt-2">
+                    <a href="{% url 'solicitar_activacion' %}" class="text-link small text-muted"><i class="fas fa-sync-alt me-1"></i> Solicitar activación</a>
+                    <a href="{% url 'recuperar_password' %}" class="text-link small text-muted"><i class="fas fa-key me-1"></i> Recuperar contraseña</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
